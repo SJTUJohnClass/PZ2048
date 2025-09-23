@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <filesystem>
 
 using namespace PZ2048;
 
@@ -36,6 +37,10 @@ int main() {
   bool all_passed = true;
   // 获取项目根目录（假定可执行文件在 build/ 下，项目根目录为其上一级）
   std::string root_path = "..";
+
+  // in case output directory not exist
+  std::filesystem::create_directories("../testcase/output/");
+
   for (int case_id = 1; case_id <= 5; ++case_id) {
     std::string in_path = "../testcase/input/" + std::to_string(case_id) + ".in";
     std::string out_path = "../testcase/output/" + std::to_string(case_id) + ".out";
@@ -93,6 +98,7 @@ int main() {
         fout << "You've stuck.\n";
         break;
       }
+      fout.flush(); // 实时更新文件内容，方便断点调试
     }
     fout << "Game ended.\n";
     auto [steps, score] = EndGame();

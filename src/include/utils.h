@@ -9,8 +9,10 @@ namespace PZ2048 {
 
     // reset the generator with a seed.
     // fixed seed gives a fixed rand.
-    // if input seed = 0, use system clock to summon a random(adj.) random(n.) seed.
     void srand(uint seed);
+
+    // use system clock to summon a random(adj.) random(n.) seed.
+    void tsrand();
 
     // give a random uint.
     uint rand();
