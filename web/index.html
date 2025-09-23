@@ -480,7 +480,7 @@
                 requestBody.seed = seed;
             }
 
-            const response = await fetch('http://localhost:18080/init', {
+            const response = await fetch('http://' + location.hostname + ':18080/init', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -506,7 +506,7 @@
 
     async function undoMove() {
         try {
-            const response = await fetch('http://localhost:18080/undo', {
+            const response = await fetch('http://' + location.hostname + ':18080/undo', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -566,7 +566,7 @@
 
     async function sendMove(direction) {
         try {
-            const response = await fetch('http://localhost:18080/play', {
+            const response = await fetch('http://' + location.hostname + ':18080/play', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -727,7 +727,7 @@
             aboutContentDiv.textContent = '';
         } else {
             try {
-                const response = await fetch('http://localhost:18080/about');
+                const response = await fetch('http://' + location.hostname + ':18080/about');
                 if (!response.ok) {
                     throw new Error(`HTTP Error! Status: ${response.status}`);
                 }
