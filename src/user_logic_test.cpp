@@ -1,14 +1,124 @@
-#include "include/game_logic.h"
-#include "include/user_logic.h"
+#include "game_logic.h"
+#include "user_logic.h"
 
 #include <chrono>
-#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <cmath>
+#include <iomanip>
+#include <vector>
 
 using namespace PZ2048;
 
+int output_pts(double avg_score) {
+    int final_score = static_cast<int>(avg_score + 0.5);
+    int res = 0;
+    if (final_score < 1000) {
+        res = 0;
+    } else if (final_score < 3000) {
+        res = static_cast<int>(std::ceil(final_score * final_score / 200000.0)) + 30;
+    } else if (final_score < 8000) {
+        res = static_cast<int>(std::ceil(12.27 * std::log2(final_score / 1000.0) + 55.55));
+    } else {
+        res = std::min(static_cast<int>(std::ceil(42.92 * std::sqrt(std::log2(final_score / 1000.0)) + 18.16)), 110);
+    }
+    return res;
+}
+
+int main() {
+
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
+    auto start_time = std::chrono::steady_clock::now(); // or high resolution clock
+    int total_score = 0;
+    int total_steps = 0;
+    int games = 10000;
+    int target = 2048;
+    int row_num = 4, col_num = 4;
+
+    for (int i = 0; i < games; ++i) {
+        uint seed = i + 1;
+        ClientPrepare(row_num, col_num);
+        Start(row_num, col_num, target, seed);
+
+        double current_avg_score = (i > 0) ? total_score * 1.0 / i : 0;
+        double current_avg_steps = (i > 0) ? total_steps * 1.0 / i : 0;
+        double current_avg_time = (i > 0)
+          ? (std::chrono::duration_cast<std::chrono::microseconds>(
+              std::chrono::steady_clock::now() - start_time).count() * 0.001 * 0.001 / i)
+          : 0;
+        int progress_percent = (i * 100) / games;
+
+        auto local_start_time = std::chrono::steady_clock::now();
+
+        while (true) {
+            std::ostringstream oss;
+            auto *obuf = std::cout.rdbuf(oss.rdbuf());
+            PrintBoard();
+            std::istringstream iss(oss.str());
+            std::cout.rdbuf(obuf);
+            auto *ibuf = std::cin.rdbuf(iss.rdbuf());
+            ReadBoard();
+            std::cin.rdbuf(ibuf);
+            char oper = Decide();
+            if (oper != 'w' && oper != 's' && oper != 'a' && oper != 'd') {
+                continue;
+            }
+            TryRun(oper);
+
+            auto local_end_time = std::chrono::steady_clock::now();
+            std::cout << "\rLoading";
+            for (int j = 0; j < (i / 100) % 4 + 1; j++) std::cout << ".";
+            for (int j = (i / 100) % 4 + 1; j < 4; j++) std::cout << " ";
+            std::cout << " [" << std::setw(3) << progress_percent << "%]";
+            std::cout << " | Game: " << std::setw(5) << i << "/" << games;
+            std::cout << " | Total time: " << std::setw(5) << std::fixed << std::setprecision(2) <<
+                std::chrono::duration_cast<std::chrono::microseconds>(local_end_time - start_time).count()
+                * 0.001 * 0.001 << "s";
+            std::cout << " | Steps: " << std::setw(4) << Steps();
+            std::cout << " | Score: " << std::setw(4) << Score();
+            std::cout << " | Time: " << std::setw(5) << std::fixed << std::setprecision(2) <<
+                std::chrono::duration_cast<std::chrono::microseconds>(local_end_time - local_start_time).count()
+                * 0.001 * 0.001 << "s";
+            std::cout << " | Avg Score: " << std::setw(6) << std::fixed << std::setprecision(2) << current_avg_score;
+            std::cout << " | Avg Steps: " << std::setw(6) << std::fixed << std::setprecision(2) << current_avg_steps;
+            std::cout << " | Avg Time: " << std::setw(5) << std::fixed << std::setprecision(2) << current_avg_time << "s";
+            std::cout.flush();
+
+            if (HasReachedTarget()) {
+                auto [steps, score] = EndGame();
+                total_score += score;
+                total_steps += steps;
+                break;
+            }
+            if (Stuck()) {
+                auto [steps, score] = EndGame();
+                total_score += score;
+                total_steps += steps;
+                break;
+            }
+        }
+    }
+
+    std::cout << "\r" << std::string(100, ' ') << "\r";
+    std::cout.flush();
+
+    auto end_time = std::chrono::steady_clock::now();
+    double avg_score = total_score * 1.0 / games;
+    double avg_steps = total_steps * 1.0 / games;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    std::cout << "Average score over " << games << " games: " << avg_score << std::endl;
+    std::cout << "Average steps over " << games << " games: " << avg_steps << std::endl;
+    std::cout << "Total run time: " << std::fixed << std::setprecision(2) << ms * 0.001 << "s";
+    std::cout << " (" << ms / 60000 << "min " << std::fixed << std::setprecision(2) <<
+        (ms % 60000) * 0.001 << "s)" << std::endl;
+    std::cout << "Score by formula: " << output_pts(avg_score) << std::endl;
+    std::cout.flush();
+    return 0;
+}
+
+/*
 void SingleTest() {
     int row_num, col_num;
     uint seed;
@@ -41,7 +151,6 @@ void SingleTest() {
 
         TryRun(oper);
 
-    /*
     if(flag) {
       std::cout << "Operation succeeded.\n";
     } else {
@@ -49,7 +158,7 @@ void SingleTest() {
     }
     std::cout << RowNum() << ' ' << ColNum() << ' ' << Steps() << ' ' << Score() << '\n';
     PrintBoard();
-    */
+
 
     if(HasReachedTarget()) {
       std::cout << "You've merged an 2048 tile!\n";
@@ -67,87 +176,4 @@ void SingleTest() {
     }
   }
 }
-
-int main() {
-    auto start_time = std::chrono::steady_clock::now();
-    int total_score = 0;
-    int total_steps = 0;
-    int games = 10000;
-    int target = 2048;
-    int row_num = 4, col_num = 4;
-    for (int i = 0; i < games; ++i) {
-        uint seed = i + 1;
-        ClientPrepare(row_num, col_num);
-        Start(row_num, col_num, target,seed);
-
-        double current_avg_score = (i > 0) ? total_score * 1.0 / i : 0;
-        double current_avg_steps = (i > 0) ? total_steps * 1.0 / i : 0;
-        int progress_percent = (i * 100) / games;
-
-        std::cout << "\rLoading";
-        int dot_count = (i / 100) % 4 + 1;
-        for (int j = 0; j < dot_count; j++) {
-            std::cout << ".";
-        }
-        for (int j = dot_count; j < 4; j++) {
-            std::cout << " ";
-        }
-
-        std::cout << " [" << std::setw(3) << progress_percent << "%]";
-        std::cout << " | Avg Score: " << std::setw(6) << std::fixed << std::setprecision(2) << current_avg_score;
-        std::cout << " | Avg Steps: " << std::setw(6) << std::fixed << std::setprecision(2) << current_avg_steps;
-        std::cout << " | Game: " << std::setw(5) << i << "/" << games;
-        std::cout.flush();
-
-        while (true) {
-            std::ostringstream oss;
-            auto *obuf = std::cout.rdbuf(oss.rdbuf());
-            PrintBoard();
-            std::istringstream iss(oss.str());
-            std::cout.rdbuf(obuf);
-            auto *ibuf = std::cin.rdbuf(iss.rdbuf());
-            ReadBoard();
-            std::cin.rdbuf(ibuf);
-            char oper = Decide();
-            if (oper != 'w' && oper != 's' && oper != 'a' && oper != 'd') {
-                continue;
-            }
-            TryRun(oper);
-            // win / lose / taking too long...
-            if (HasReachedTarget() || Stuck() || Steps() > 10000000) {
-                auto [steps, score] = EndGame();
-                total_score += score;
-                total_steps += steps;
-                break;
-            }
-        }
-    }
-
-    std::cout << "\r" << std::string(100, ' ') << "\r";
-    std::cout.flush();
-
-    auto end_time = std::chrono::steady_clock::now();
-    double avg_score = total_score * 1.0 / games;
-    double avg_steps = total_steps * 1.0 / games;
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-    std::cout << "Average score over " << games << " games: " << avg_score << std::endl;
-    std::cout << "Average steps over " << games << " games: " << avg_steps << std::endl;
-    std::cout << "Total run time: " << ms << " ms" << std::endl;
-    std::cout.flush();
-
-    // 按公式输出分数
-    int final_score = static_cast<int>(avg_score + 0.5);
-    int output_pts = 0;
-    if (final_score < 1000) {
-        output_pts = 0;
-    } else if (final_score < 3000) {
-        output_pts = static_cast<int>(std::ceil(final_score * final_score / 200000.0)) + 30;
-    } else if (final_score < 8000) {
-        output_pts = static_cast<int>(std::ceil(12.27 * std::log2(final_score / 1000.0) + 55.55));
-    } else {
-        output_pts = std::min(static_cast<int>(std::ceil(42.92 * std::sqrt(std::log2(final_score / 1000.0)) + 18.16)), 110);
-    }
-    std::cout << "Score by formula: " << output_pts << std::endl;
-    std::cout.flush();
-    return 0;
-}
+*/
