@@ -1,9 +1,4 @@
-#include "include/game_logic.h"
-//WARNING: DO NOT DELETE THE THREE LINES BELOW!
-//WHEN YOU PUT YOUR CODE TO ACMOJ, YOU WOULD DELETE THE LINE 1 AND USE LINE 4-6 INSTEAD 
-//#include "game_logic.h"
-//#include "utils.h"
-//#include "utils.cpp"
+#include "game_logic.h"
 
 namespace PZ2048 {
 
@@ -25,24 +20,29 @@ void Start(int row_num, int col_num, int target, uint game_seed) {
 
 std::pair<int, int> EndGame() {
     /** implementation here **/
+    return {0, 0};
 }
 
 int GetRows() {
     /** implementation here **/
+    return 0;
 }
 
 int GetCols() { 
     /** implementation here **/
+    return 0;
 }
 
 bool TryRun(char dir) {
     /** implementation here **/
+    return false;
 }
 
 bool Undo() {
     /** implement here. **/
     /**in the process you need to undo the operation and both the score**/
     /**for example we have 0 0 0 4 4pts from 2 0 0 2 0pts, after we undo, we get 2 0 0 2 0pts**/
+    return false;
 }
 
 void SetTile(int row_index, int col_index, int value) {
@@ -51,26 +51,32 @@ void SetTile(int row_index, int col_index, int value) {
 
 int GetTile(int row_index, int col_index) {
     /** implement here. **/
+    return 0;
 }
 
 int Score() { 
-    /** implement here. **/ 
+    /** implement here. **/
+    return 0;
 }
 
 int Steps() { 
-    /** implement here. **/ 
+    /** implement here. **/
+    return 0;
 }
 
 int GetTarget() { 
-    /** implement here. **/ 
+    /** implement here. **/
+    return 0;
 }
 
 bool HasReachedTarget() {
     /** implement here. **/
+    return false;
 }
 
 bool Stuck() {
     /** implement here. **/
+    return false;
 }
 
 void PrintBoard() {

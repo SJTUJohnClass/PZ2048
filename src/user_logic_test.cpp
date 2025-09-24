@@ -2,6 +2,7 @@
 #include "include/user_logic.h"
 
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <cmath>
@@ -78,6 +79,26 @@ int main() {
         uint seed = i + 1;
         ClientPrepare(row_num, col_num);
         Start(row_num, col_num, target,seed);
+
+        double current_avg_score = (i > 0) ? total_score * 1.0 / i : 0;
+        double current_avg_steps = (i > 0) ? total_steps * 1.0 / i : 0;
+        int progress_percent = (i * 100) / games;
+
+        std::cout << "\rLoading";
+        int dot_count = (i / 100) % 4 + 1;
+        for (int j = 0; j < dot_count; j++) {
+            std::cout << ".";
+        }
+        for (int j = dot_count; j < 4; j++) {
+            std::cout << " ";
+        }
+
+        std::cout << " [" << std::setw(3) << progress_percent << "%]";
+        std::cout << " | Avg Score: " << std::setw(6) << std::fixed << std::setprecision(2) << current_avg_score;
+        std::cout << " | Avg Steps: " << std::setw(6) << std::fixed << std::setprecision(2) << current_avg_steps;
+        std::cout << " | Game: " << std::setw(5) << i << "/" << games;
+        std::cout.flush();
+
         while (true) {
             std::ostringstream oss;
             auto *obuf = std::cout.rdbuf(oss.rdbuf());
@@ -92,13 +113,8 @@ int main() {
                 continue;
             }
             TryRun(oper);
-            if (HasReachedTarget()) {
-                auto [steps, score] = EndGame();
-                total_score += score;
-                total_steps += steps;
-                break;
-            }
-            if (Stuck()) {
+            // win / lose / taking too long...
+            if (HasReachedTarget() || Stuck() || Steps() > 10000000) {
                 auto [steps, score] = EndGame();
                 total_score += score;
                 total_steps += steps;
@@ -106,6 +122,10 @@ int main() {
             }
         }
     }
+
+    std::cout << "\r" << std::string(100, ' ') << "\r";
+    std::cout.flush();
+
     auto end_time = std::chrono::steady_clock::now();
     double avg_score = total_score * 1.0 / games;
     double avg_steps = total_steps * 1.0 / games;
