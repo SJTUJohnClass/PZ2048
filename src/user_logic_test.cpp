@@ -8,7 +8,6 @@
 #include <iomanip>
 #include <vector>
 
-using namespace PZ2048;
 
 int output_pts(double avg_score) {
     int final_score = static_cast<int>(avg_score + 0.5);
@@ -39,8 +38,8 @@ int main() {
 
     for (int i = 0; i < games; ++i) {
         uint seed = i + 1;
-        ClientPrepare(row_num, col_num);
-        Start(row_num, col_num, target, seed);
+        PZ2048::ClientPrepare(row_num, col_num);
+        PZ2048::Start(row_num, col_num, target, seed);
 
         double current_avg_score = (i > 0) ? total_score * 1.0 / i : 0;
         double current_avg_steps = (i > 0) ? total_steps * 1.0 / i : 0;
@@ -55,17 +54,17 @@ int main() {
         while (true) {
             std::ostringstream oss;
             auto *obuf = std::cout.rdbuf(oss.rdbuf());
-            PrintBoard();
+            PZ2048::PrintBoard();
             std::istringstream iss(oss.str());
             std::cout.rdbuf(obuf);
             auto *ibuf = std::cin.rdbuf(iss.rdbuf());
-            ReadBoard();
+            PZ2048::ReadBoard();
             std::cin.rdbuf(ibuf);
-            char oper = Decide();
+            char oper = PZ2048::Decide();
             if (oper != 'w' && oper != 's' && oper != 'a' && oper != 'd') {
                 continue;
             }
-            TryRun(oper);
+            PZ2048::TryRun(oper);
 
             auto local_end_time = std::chrono::steady_clock::now();
             std::cout << "\rLoading";
@@ -76,8 +75,8 @@ int main() {
             std::cout << " | Total time: " << std::setw(5) << std::fixed << std::setprecision(2) <<
                 std::chrono::duration_cast<std::chrono::microseconds>(local_end_time - start_time).count()
                 * 0.001 * 0.001 << "s";
-            std::cout << " | Steps: " << std::setw(4) << Steps();
-            std::cout << " | Score: " << std::setw(4) << Score();
+            std::cout << " | Steps: " << std::setw(4) << PZ2048::Steps();
+            std::cout << " | Score: " << std::setw(4) << PZ2048::Score();
             std::cout << " | Time: " << std::setw(5) << std::fixed << std::setprecision(2) <<
                 std::chrono::duration_cast<std::chrono::microseconds>(local_end_time - local_start_time).count()
                 * 0.001 * 0.001 << "s";
@@ -86,14 +85,8 @@ int main() {
             std::cout << " | Avg Time: " << std::setw(5) << std::fixed << std::setprecision(2) << current_avg_time << "s";
             std::cout.flush();
 
-            if (HasReachedTarget()) {
-                auto [steps, score] = EndGame();
-                total_score += score;
-                total_steps += steps;
-                break;
-            }
-            if (Stuck()) {
-                auto [steps, score] = EndGame();
+            if (PZ2048::HasReachedTarget() || PZ2048::Stuck()) {
+                auto [steps, score] = PZ2048::EndGame();
                 total_score += score;
                 total_steps += steps;
                 break;

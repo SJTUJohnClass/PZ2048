@@ -29,6 +29,8 @@ int output_pts(double avg_score) {
 }
 
 void run_single_game(int game_id, int rows, int cols, int target, int result_fd) {
+  auto game_start_time = std::chrono::steady_clock::now();
+
   uint seed = game_id + 1;
 
   PZ2048::ClientPrepare(rows, cols);
@@ -55,13 +57,19 @@ void run_single_game(int game_id, int rows, int cols, int target, int result_fd)
     if(PZ2048::HasReachedTarget() || PZ2048::Stuck()) {
       auto [steps, score] = PZ2048::EndGame();
 
+      auto game_end_time = std::chrono::steady_clock::now();
+      auto game_duration = std::chrono::duration_cast<std::chrono::microseconds>(
+          game_end_time - game_start_time);
+      double game_seconds = game_duration.count() * 1e-6;
+
       std::string result = "RESULT:" + std::to_string(game_id) + ":" +
-        std::to_string(score) + ":" + std::to_string(steps) + "\n";
+        std::to_string(score) + ":" + std::to_string(steps) + ":" +
+        std::to_string(game_seconds) + "\n";
       write(result_fd, result.c_str(), result.length());
       break;
     }
   }
-  exit(0);
+  exit(0); // terminate this sub process
 }
 
 void concurrent_test_multiprocess() {
@@ -71,13 +79,14 @@ void concurrent_test_multiprocess() {
   auto start_time = std::chrono::steady_clock::now();
   long long total_score = 0;
   long long total_steps = 0;
+  double total_game_time = 0.0;
   int completed_games = 0;
   int games = 10000;
   int target = 2048;
   int row_num = 4, col_num = 4;
   int next_game_id_to_start = 0;
 
-  unsigned int num_processes = std::min(std::thread::hardware_concurrency(), 16u);
+  unsigned int num_processes = std::thread::hardware_concurrency();
   if(num_processes == 0) num_processes = 4;
   num_processes = std::min(num_processes, (unsigned int)games);
 
@@ -134,10 +143,15 @@ void concurrent_test_multiprocess() {
                 try {
                   size_t pos1 = line.find(':', 7);
                   size_t pos2 = line.find(':', pos1 + 1);
+                  size_t pos3 = line.find(':', pos2 + 1);
+
                   int score = std::stoi(line.substr(pos1 + 1, pos2 - pos1 - 1));
-                  int steps = std::stoi(line.substr(pos2 + 1));
+                  int steps = std::stoi(line.substr(pos2 + 1, pos3 - pos2 - 1));
+                  double game_time = std::stod(line.substr(pos3 + 1));
+
                   total_score += score;
                   total_steps += steps;
+                  total_game_time += game_time;
                   completed_games++;
                   progress_updated = true;
                 } catch(...) {
@@ -182,6 +196,7 @@ void concurrent_test_multiprocess() {
       if(progress_updated) {
         double current_avg_score = (completed_games > 0) ? total_score * 1.0 / completed_games : 0;
         double current_avg_steps = (completed_games > 0) ? total_steps * 1.0 / completed_games : 0;
+        double current_avg_game_time = (completed_games > 0) ? total_game_time / completed_games : 0;
         auto total_elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
           std::chrono::steady_clock::now() - start_time);
         double total_elapsed_s = total_elapsed_ms.count() * 0.001;
@@ -193,6 +208,7 @@ void concurrent_test_multiprocess() {
         std::cout << " [" << std::setw(3) << progress_percent << "%]";
         std::cout << " | Game: " << std::setw(5) << completed_games << "/" << games;
         std::cout << " | Total time: " << std::setw(5) << std::fixed << std::setprecision(2) << total_elapsed_s << "s";
+        std::cout << " | Avg Game Time: " << std::setw(6) << std::fixed << std::setprecision(3) << current_avg_game_time << "s";
         std::cout << " | Avg Score: " << std::setw(6) << std::fixed << std::setprecision(2) << current_avg_score;
         std::cout << " | Avg Steps: " << std::setw(6) << std::fixed << std::setprecision(2) << current_avg_steps;
         std::cout.flush();
@@ -210,19 +226,23 @@ void concurrent_test_multiprocess() {
     }
   }
 
-  std::cout << "\r" << std::string(150, ' ') << "\r";
+  std::cout << "\r" << std::string(200, ' ') << "\r";
   std::cout.flush();
 
   auto end_time = std::chrono::steady_clock::now();
   double avg_score = total_score * 1.0 / games;
   double avg_steps = total_steps * 1.0 / games;
   auto total_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+  double total_wall_time = total_duration.count() * 0.001;
+  double avg_game_time = total_game_time / games;
 
   std::cout << "Average score over " << games << " games: " << avg_score << std::endl;
   std::cout << "Average steps over " << games << " games: " << avg_steps << std::endl;
-  std::cout << "Total run time: " << std::fixed << std::setprecision(2) << total_duration.count() * 0.001 << "s";
+  std::cout << "Total wall clock time: " << std::fixed << std::setprecision(2) << total_wall_time << "s";
   std::cout << " (" << total_duration.count() / 60000 << "min " << std::fixed << std::setprecision(2) <<
     (total_duration.count() % 60000) * 0.001 << "s)" << std::endl;
+  std::cout << "Total system time (sum of all game times): " << std::fixed << std::setprecision(2) << total_game_time << "s" << std::endl;
+  std::cout << "Average game time: " << std::fixed << std::setprecision(3) << avg_game_time << "s" << std::endl;
   std::cout << "Score by formula: " << output_pts(avg_score) << std::endl;
 }
 
