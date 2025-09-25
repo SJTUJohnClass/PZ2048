@@ -86,7 +86,7 @@ void concurrent_test_multiprocess() {
   int row_num = 4, col_num = 4;
   int next_game_id_to_start = 0;
 
-  unsigned int num_processes = std::thread::hardware_concurrency();
+  unsigned int num_processes = std::min(std::thread::hardware_concurrency(), 16u);
   if(num_processes == 0) num_processes = 4;
   num_processes = std::min(num_processes, (unsigned int)games);
 
@@ -120,6 +120,18 @@ void concurrent_test_multiprocess() {
       return;
     }
   }
+
+  // initial message
+  std::cout << "\rLoading";
+  for(int j = 0; j < (completed_games / 100) % 4 + 1; j++) std::cout << ".";
+  for(int j = (completed_games / 100) % 4 + 1; j < 4; j++) std::cout << " ";
+  std::cout << " [" << std::setw(3) << 0 << "%]";
+  std::cout << " | Game: " << std::setw(5) << completed_games << "/" << games;
+  std::cout << " | Total time: " << std::setw(5) << std::fixed << std::setprecision(2) << 0 << "s";
+  std::cout << " | Avg Game Time: " << std::setw(6) << std::fixed << std::setprecision(3) << 0 << "s";
+  std::cout << " | Avg Score: " << std::setw(6) << std::fixed << std::setprecision(2) << 0;
+  std::cout << " | Avg Steps: " << std::setw(6) << std::fixed << std::setprecision(2) << 0;
+  std::cout.flush();
 
   while(completed_games < games) {
     int poll_count = poll(fds.data(), num_processes, 100);
