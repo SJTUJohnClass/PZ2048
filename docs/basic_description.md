@@ -1,6 +1,8 @@
-`src/server.cpp`为Gemini模型帮助下编写，涉及一些网络通信逻辑；具体使用方法在主`README.md`中已经有所介绍。
+> Words from a contributor
 
-`src/user_logic_test_concurrency.cpp`为Deepseek模型帮助下编写，涉及C语言进程相关概念。
+`src/server.cpp`与`web`文件夹相关内容为重度借助Gemini模型帮助下编写，涉及一些网络通信逻辑；具体使用方法在主`README.md`中已经有所介绍。
+
+`src/user_logic_test_concurrency.cpp`为重度借助Deepseek模型帮助下编写，涉及C语言进程相关概念。
 
 因为它的IO通讯逻辑与`src/user_logic_test.cpp`有所不同，你可能会发现它即使在单进程下运行速度也比后者快，这是正常现象。
 
@@ -8,5 +10,6 @@
 
 进程数由 $num\_processes$ 变量控制，你可以修改其值以探究对于你的设备与逻辑最高效的配置。
 
-当然，这些文件并不会被提交到OJ或助教的本地机上，所以你可以自由修改它们
-（比如给server加上自动执行本地user logic的功能，让进度条分行显示，改造进度条内容格式等）。
+以上文件并不会被提交到OJ或助教的本地机上，所以你可以自由修改它们（比如进度条相关格式与逻辑，支持操作序列以文件形式上传至server等）。
+
+如果你有足够动机，你也可以学习这些文件的内容。前端开发与并发支持还是挺有用的。
